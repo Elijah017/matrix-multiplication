@@ -11,14 +11,41 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
+
+#include "utils/list.h"
+
+#define U64_MAX_CHARS 20
 
 typedef struct {
     uint64_t start;
     uint64_t end;
     uint64_t size;
 } ProcessWork;
+
+char *u64_to_string(void *value) {
+	char* string = malloc(U64_MAX_CHARS);
+	snprintf(string, U64_MAX_CHARS, "%ld", *(uint64_t*)value);
+	return string;
+}
+
+int initialise_work(ProcessWork *procs, char* msize, int rank, int size) {
+    int matrix_size = atoi(msize);
+
+    int per_proc = matrix_size / size;
+    int remainder = matrix_size % size;
+
+    if (rank < remainder) {
+        procs->start = rank * (per_proc + 1);
+        procs->end = procs->start + per_proc + 1;
+    } else {
+        procs->start = (rank * per_proc) + remainder;
+        procs->end = procs->start + per_proc;
+    }
+    procs->size = procs->end - procs->start;
+
+	return matrix_size;
+}
 
 int main(int argc, char **argv) {
     int size, rank, level = 0;
@@ -28,20 +55,8 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     printf("threads: %d\n", omp_get_max_threads());
 
-    int matrix_size = atoi(argv[1]);
-
-    ProcessWork workAlloc;
-    int per_proc = matrix_size / size;
-    int remainder = matrix_size % size;
-
-    if (rank < remainder) {
-        workAlloc.start = rank * (per_proc + 1);
-        workAlloc.end = workAlloc.start + per_proc + 1;
-    } else {
-        workAlloc.start = (rank * per_proc) + remainder;
-        workAlloc.end = workAlloc.start + per_proc;
-    }
-    workAlloc.size = workAlloc.end - workAlloc.start;
+	ProcessWork procs;
+	int matrix_size = initialise_work(&procs, argv[1], rank, size);
 
     MPI_Finalize();
     return 0;
