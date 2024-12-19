@@ -23,8 +23,10 @@ int initialse_files(CompressedMatrix *matrix_A, CompressedMatrix *matrix_B, Comp
 }
 
 int open_matrix_file(CompressedMatrix *matrix, const char *Xfile, const char *Yfile) {
-	matrix->Xfile = fopen(Xfile, "rw");
-	matrix->Yfile = fopen(Yfile, "rw");
+	matrix->Xfile = fopen(Xfile, "w+");
+	assert(matrix->Xfile != NULL);
+	matrix->Yfile = fopen(Yfile, "w+");
+	assert(matrix->Yfile != NULL);
 	return 0;
 }
 

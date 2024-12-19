@@ -17,13 +17,11 @@ set(SOURCES
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Link MPI libraries
 if (MPI_C_FOUND)
     include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
     target_link_libraries(${PROJECT_NAME} PUBLIC MPI::MPI_C)
 endif()
 
-# Link OpenMP libraries
 if(OpenMP_C_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_C)
 endif()

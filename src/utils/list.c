@@ -4,7 +4,7 @@ size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(voi
 	capacity = capacity == 0 ? _LIST_DEFAULT_CAPACITY : capacity;
 
 	*list = (List){
-		.list = malloc(size * capacity),
+		.list = calloc(capacity, size),
 		._capacity = capacity,
 		._size = size,
 		.length = 0,
@@ -46,18 +46,46 @@ void *list_get_index(List *list, size_t index) {
 	return list->list + (index * list->_size);
 }
 
-int print_list(List *list) {
+void print_list(List *list) {
 	printf("[ ");
 
 	for (size_t i = 0; i < list->length; i++) {
-		char* value = list->_to_string(list_get_index(list, i));
+		void *value = list_get_index(list, i);
 		if (i == list->length - 1) {
-			printf("%s", value);
+			if (list->_to_string == NULL) {
+				printf("%p", value);
+			} else {
+				printf("%s", list->_to_string(value));
+			}
 		} else {
-			printf("%s, ", value);
+			if (list->_to_string == NULL) {
+				printf("%p, ", value);
+			} else {
+				printf("%s, ", value);
+			}
 		}
 		free(value);
 	}
 
 	printf(" ]\n");
+}
+
+void *list_set_index(List *list, size_t index, void *element) {
+	if (index >= list->length) { return NULL; }
+
+	memcpy(list->list + (index * list->_size), element, list->_size);
+	return list_get_index(list, index);
+}
+
+void list_write_context_cache(List *list, FILE *cache) {
+	fwrite(&list->length, sizeof(size_t), 1, cache);
+	fwrite(&list->list, list->_size, list->length, cache);
+}
+
+void list_read_context_cache(List *list, size_t size, char*(*to_string)(void*), FILE *cache) {
+	size_t length;
+	fread(&length, sizeof(size_t), 1, cache);
+
+	init_list(list, size, length, to_string);
+	fread(&list->list, size, length, cache);
 }
