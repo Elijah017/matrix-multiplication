@@ -3,22 +3,14 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "../config.h"
+#include "list.h"
+#include "strings.h"
 
-typedef struct {
-	FILE *Xfile;
-	FILE *Yfile;
-} CompressedMatrix;
+void write_matrix(const char *Xname, const char *Yname, FILE *cache, Args *args, bool u8);
 
-int initialse_files(CompressedMatrix *matrix_A, CompressedMatrix *matrix_B, CompressedMatrix *matrix_C);
-
-int open_matrix_file(CompressedMatrix *matrix, const char *Xfile, const char *Yfile);
-
-int open_matrix_temp_file(CompressedMatrix *matrix);
-
-int close_matrix_file(CompressedMatrix *matrix);
-
-int close_files(CompressedMatrix *matrix_A, CompressedMatrix *matrix_B, CompressedMatrix *matrix_C);
+void dump_matrices(FILE *A, FILE *B, FILE *C, Args *args);
 
 #endif

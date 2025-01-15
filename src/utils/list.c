@@ -1,6 +1,6 @@
 #include "list.h"
 
-size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(void*)) {
+size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(void*), void(*free_val)(void*)) {
 	capacity = capacity == 0 ? _LIST_DEFAULT_CAPACITY : capacity;
 
 	*list = (List){
@@ -8,7 +8,8 @@ size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(voi
 		._capacity = capacity,
 		._size = size,
 		.length = 0,
-		._to_string = to_string
+		._to_string = to_string,
+		._free_val = free_val
 	};
 
 	if (list->list == NULL) { return 0; }
@@ -29,8 +30,7 @@ size_t list_increase_capacity(List *list) {
 	return list->_capacity;
 }
 
-size_t list_add_element(List *list, void *element) {
-	int err;
+size_t list_add_element(List *list, const void *element) {
 	if (list->_capacity == list->length) {
 		if (list_increase_capacity(list) <= 0) { return 0; }
 	}
@@ -61,7 +61,7 @@ void print_list(List *list) {
 			if (list->_to_string == NULL) {
 				printf("%p, ", value);
 			} else {
-				printf("%s, ", value);
+				printf("%s, ", list->_to_string(value));
 			}
 		}
 		free(value);
@@ -77,15 +77,42 @@ void *list_set_index(List *list, size_t index, void *element) {
 	return list_get_index(list, index);
 }
 
-void list_write_context_cache(List *list, FILE *cache) {
-	fwrite(&list->length, sizeof(size_t), 1, cache);
-	fwrite(&list->list, list->_size, list->length, cache);
+size_t list_write_cache(List *list, FILE *cache) {
+	size_t length = fwrite(&list->length, sizeof(size_t), 1, cache);
+	if (length == 0) { return 0; }
+	size_t bytes = fwrite(list->list, list->_size, list->length, cache);
+	if (bytes == 0) { return 0; }
+	return (sizeof(size_t) * length) + (bytes * list->_size);
 }
 
-void list_read_context_cache(List *list, size_t size, char*(*to_string)(void*), FILE *cache) {
+size_t list_read_cache(List *list, FILE *cache) {
 	size_t length;
-	fread(&length, sizeof(size_t), 1, cache);
+	size_t lbytes = fread(&length, sizeof(size_t), 1, cache);
+	if (lbytes == 0) { return 0; }
 
-	init_list(list, size, length, to_string);
-	fread(&list->list, size, length, cache);
+	list->list = realloc(list->list, length);
+	if (list->list == NULL) {
+		errno = ENOMEM;
+		return 0;
+	}
+	list->_capacity = length;
+	list->length = length; 
+
+	size_t vbytes = fread(list->list, list->_size, length, cache);
+	if (vbytes == 0) { return 0; }
+	return (sizeof(size_t) * lbytes) + (vbytes * list->_size);
+}
+
+void delete_list(void *lst) {
+	List *list = lst;
+	if (list->list == NULL) { return; }
+
+	if (list->_free_val != NULL) {
+		for (size_t i = 0; i < list->length; i++) {
+			list->_free_val(list_get_index(list, i));
+		}
+	}
+
+	free(list->list);
+	list->list = NULL;
 }

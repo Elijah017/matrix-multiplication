@@ -4,7 +4,7 @@ project(matrix VERSION 0.1 LANGUAGES C)
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
 set(SOURCES
 		src/matrix.c
 		src/config.h
@@ -13,6 +13,8 @@ set(SOURCES
 		src/utils/files.h
 		src/utils/list.c
 		src/utils/list.h
+		src/utils/strings.c
+		src/utils/strings.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

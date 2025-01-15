@@ -15,6 +15,7 @@ typedef struct {
     size_t _capacity;
     size_t length;
 	char* (*_to_string)(void *); // return should be dynamically allocated char*
+	void (*_free_val)(void *);
 } List;
 
 /**
@@ -28,7 +29,7 @@ typedef struct {
  * 
  * @return capacity of the list or 0
  */
-size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(void*));
+size_t init_list(List *list, size_t size, size_t capacity, char*(*to_string)(void*), void(*free_val)(void*));
 
 /**
  * Increases list capacity by default scale factor
@@ -42,7 +43,7 @@ size_t list_increase_capacity(List *);
  * 
  * @return The new size of the list or 0
  */
-size_t list_add_element(List *list, void *element);
+size_t list_add_element(List *list, const void *element);
 
 /**
  * Gets the element of the list at the given index
@@ -57,25 +58,29 @@ void *list_get_index(List *list, size_t index);
 void print_list(List *list);
 
 /**
- * Dumps the binary contents of the list into the provided file. The formatting of the
- * files assumes the user knows the type of the list when it is required
+ * caches a list to disk. Expects the read/write head to be positioned correctly and may
+ * require `seek`-ing before use
  * 
- * @param list The list being cached
- * @param cache The file storing the list
+ * @param list List to be cached
+ * @param cache Pointer to cache file
+ * 
+ * @return number of bytes written to cache, 0 on error
  */
-void list_write_context_cache(List *list, FILE *cache);
+size_t list_write_cache(List *list, FILE *cache);
 
 /**
- * Reads the contents of a binary list previously cached context assumed list. The
- * context expected being the size of the type of value stored by the list and the
- * to_string function.
+ * loads list values from cache. Expects read/write head to be positioned correctly and
+ * may require `seek`-ing before use
  * 
- * @param list List that will be initialised and store the cached contents
- * @param size Size (in bytes) of the lists datatype
- * @param to_string Function that converts a value to a string
- * @param cache Cache to be read from with read/write head possitioned to the appropiate
- * element (may require use of seek prior to use of this function)
+ * @param list Pointer to initialised List
+ * @param cache Pointer to cache file
+ * 
+ * @return number of bytes read from cache, 0 on error
+ * 
+ * @note Sets errno to ENOMEM if realloc of List.list fails
  */
-void list_read_context_cache(List *list, size_t size, char*(*to_string)(void*), FILE *cache);
+size_t list_read_cache(List *list, FILE *cache);
+
+void delete_list(void *list);
 
 #endif // _DYNAMIC_LIST
